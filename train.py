@@ -37,19 +37,25 @@ dataloaders = {
 
 device = torch.device("cuda" if torch.cuda.is_available() and args.gpu else "cpu")
 print(device)
-model = models.vgg16(pretrained=True)
 
+if (args.arch == 'vgg16'):
+    model = models.vgg16(pretrained=True)
+    classifier = nn.Sequential(OrderedDict([
+                              ('fc1', nn.Linear(25088, 1024)),
+                              ('relu', nn.ReLU()),
+                              ('dropout', nn.Dropout(0.2)),
+                              ('fc3', nn.Linear(1024, 102)),
+                              ('output', nn.LogSoftmax(dim=1))
+                              ]))
+elif(args.arch == 'densenet121'):
+    model = models.densenet121(pretrained=True) 
+    model.classifier = nn.Sequential(nn.Linear(1024, 256),
+                                 nn.ReLU(),
+                                 nn.Dropout(0.2),
+                                 nn.Linear(256, 102),
+                                 nn.LogSoftmax(dim=1))
 for param in model.parameters():
-    param.requires_grad = False
-
-classifier = nn.Sequential(OrderedDict([
-                          ('fc1', nn.Linear(25088, 1024)),
-                          ('relu', nn.ReLU()),
-                          ('dropout', nn.Dropout(0.2)),
-                          ('fc3', nn.Linear(1024, 102)),
-                          ('output', nn.LogSoftmax(dim=1))
-                          ]))
-
+        param.requires_grad = False
 model.classifier = classifier
 criterion = nn.NLLLoss()
 optimizer = optim.Adam(model.classifier.parameters(), lr=args.learning_rate)
@@ -99,6 +105,6 @@ checkpoint = {
     'state_dict': model.state_dict(),
     'optimizer_state_dict': optimizer.state_dict()
 }
-torch.save(checkpoint,args.save_dir+'checkpoint.pth')
+torch.save(checkpoint,args.save_dir+args.arch+'_checkpoint.pth')
 
 

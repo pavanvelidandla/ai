@@ -17,12 +17,15 @@ args = parser.parse_args()
 def predict(image_path, model, topk=5):
     ''' Predict the class (or classes) of an image using a trained deep learning model.
     '''
+    device = torch.device("cuda" if torch.cuda.is_available() and args.gpu else "cpu")
+    model.to(device)
     model.eval()
     processed_img = process_image(image_path)
 #     image = np.array(processed_img).transpose((1, 2, 0))
     image_tensor = torch.from_numpy(processed_img)
     image_tensor.unsqueeze_(0)
     image_tensor = image_tensor.float()
+    image_tensor.to(device)
     # Calculate the class probabilities (softmax) for img
     with torch.no_grad():
         output = model.forward(image_tensor)

@@ -64,21 +64,29 @@ def imshow(image, ax=None, title=None):
 #     plt.show()
 
 def load_checkpoint(filepath):
-    checkpoint = torch.load(filepath)
-    model = models.vgg16(pretrained=False)
+     checkpoint = torch.load(filepath)
+    if (filepath.contains('vgg16')):
+        print("Loading vgg16 details)
+        model = models.vgg16(pretrained=False) 
+        classifier = nn.Sequential(OrderedDict([
+                  ('fc1', nn.Linear(25088, 1024)),
+                  ('relu', nn.ReLU()),
+                  ('dropout', nn.Dropout(0.2)),
+                  ('fc3', nn.Linear(1024, 102)),
+                  ('output', nn.LogSoftmax(dim=1))
+              ]))
+    elif (filepath.contains('densenet')):
+        print("Loading densenet details)
+        model = models.densenet121(pretrained=False) 
+        model.classifier = nn.Sequential(nn.Linear(1024, 256),
+                                 nn.ReLU(),
+                                 nn.Dropout(0.2),
+                                 nn.Linear(256, 102),
+                                 nn.LogSoftmax(dim=1))
     for param in model.parameters():
         param.requires_grad = False
-#     optimizer = optim.Adam(model.classifier.parameters(), lr=args.learning_rate)
-    classifier = nn.Sequential(OrderedDict([
-                          ('fc1', nn.Linear(25088, 1024)),
-                          ('relu', nn.ReLU()),
-                          ('dropout', nn.Dropout(0.2)),
-                          ('fc3', nn.Linear(1024, 102)),
-                          ('output', nn.LogSoftmax(dim=1))
-                          ]))
     model.classifier = classifier
     model.class_to_idx = checkpoint['class_to_idx']
     model.load_state_dict(checkpoint['state_dict'])
-#     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epochs']
     return model
